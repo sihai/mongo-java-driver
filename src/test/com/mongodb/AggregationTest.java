@@ -148,12 +148,12 @@ public class AggregationTest extends TestCase {
         aggCollection.drop();
 
         final List<DBObject> pipeline = new ArrayList<DBObject>(prepareData());
-        pipeline.add(new BasicDBObject("$out", aggCollection.getName()));
+        pipeline.add(new BasicDBObject("$out", "aggCollection"));
         AggregationOptions options = AggregationOptions.builder()
                 .outputMode(OutputMode.CURSOR)
                 .build();
         verify(pipeline, options, ReadPreference.secondary(), aggCollection);
-        assertEquals(2, aggCollection.count());
+        assertEquals(2, rsDatabase.getCollection("aggCollection").count());
     }
 
     public List<DBObject> prepareData() {
