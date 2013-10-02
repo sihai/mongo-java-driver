@@ -144,7 +144,7 @@ public class AggregationTest extends TestCase {
         }
         MongoClient rsClient = new MongoClient(asList(new ServerAddress("localhost"), new ServerAddress("localhost", 27018)));
         DB rsDatabase = rsClient.getDB(database.getName());
-        DBCollection aggCollection = rsDatabase.getCollection("aggCollection");
+        DBCollection aggCollection = rsDatabase.getCollection(collection.getName());
         aggCollection.drop();
 
         final List<DBObject> pipeline = new ArrayList<DBObject>(prepareData());
@@ -152,7 +152,7 @@ public class AggregationTest extends TestCase {
         AggregationOptions options = AggregationOptions.builder()
                 .outputMode(OutputMode.CURSOR)
                 .build();
-        verify(pipeline, options, ReadPreference.secondary());
+        verify(pipeline, options, ReadPreference.secondary(), aggCollection);
         assertEquals(2, aggCollection.count());
     }
 
@@ -176,8 +176,12 @@ public class AggregationTest extends TestCase {
         verify(pipeline, options, ReadPreference.primary());
     }
 
-    private void verify(final List<DBObject> pipeline, final AggregationOptions options,
-                        final ReadPreference readPreference) {
+    private void verify(final List<DBObject> pipeline, final AggregationOptions options, final ReadPreference readPreference) {
+        verify(pipeline, options, readPreference, collection);
+    }
+
+    private void verify(final List<DBObject> pipeline, final AggregationOptions options, final ReadPreference readPreference,
+                        final DBCollection collection) {
         final MongoCursor out = collection.aggregate(pipeline, options, readPreference);
 
         final Map<String, DBObject> results = new HashMap<String, DBObject>();

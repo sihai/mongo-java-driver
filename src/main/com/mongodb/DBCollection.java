@@ -1325,11 +1325,13 @@ public abstract class DBCollection {
      * @return the aggregation's result set
      */
     public AggregationOutput aggregate(final List<DBObject> pipeline, ReadPreference readPreference) {
-        AggregationOptions options = AggregationOptions.builder().outputMode(AggregationOptions.OutputMode.INLINE).build();
+        AggregationOptions options = AggregationOptions.builder()
+                .outputMode(AggregationOptions.OutputMode.INLINE)
+                .build();
 
         DBObject command = prepareCommand(pipeline, options);
 
-        CommandResult res = _db.command(command, getOptions(), _db.getCommandReadPreference(command, readPreference));
+        CommandResult res = _db.command(command, getOptions(), readPreference);
         
         return new AggregationOutput(command, res);
     }
@@ -1367,8 +1369,7 @@ public abstract class DBCollection {
         String outCollection = (String) last.get("$out");
         if (outCollection != null) {
             DBCollection collection = _db.getCollection(outCollection);
-            return new DBCursorAdapter(new DBCursor(collection, new BasicDBObject(), null,
-                    _db.getCommandReadPreference(command, readPreference)));
+            return new DBCursorAdapter(new DBCursor(collection, new BasicDBObject(), null, ReadPreference.primary()));
         } else {
             return new ResultsCursor(res, this, options.getBatchSize());
         }

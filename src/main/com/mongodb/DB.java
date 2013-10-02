@@ -45,7 +45,6 @@ import java.util.Set;
  * @dochub databases
  */
 public abstract class DB {
-
     private static final Set<String> _obedientCommands = new HashSet<String>();
 
     static {
@@ -101,7 +100,7 @@ public abstract class DB {
             }
         } else if(comString.equals("aggregate")) {
             List<DBObject> pipeline = (List<DBObject>) command.get("pipeline");
-            primaryRequired = pipeline.get(pipeline.size()-1).get("$out") == null;
+            primaryRequired = pipeline.get(pipeline.size()-1).get("$out") != null;
         } else {
            primaryRequired =  !_obedientCommands.contains(comString.toLowerCase());
         }
@@ -294,11 +293,11 @@ public abstract class DB {
      * @dochub commands
      */
     public CommandResult command( DBObject cmd , int options, ReadPreference readPrefs, DBEncoder encoder ){
-        readPrefs = getCommandReadPreference(cmd, readPrefs);
-        cmd = wrapCommand(cmd, readPrefs);
+        ReadPreference effectiveReadPrefs = getCommandReadPreference(cmd, readPrefs);
+        cmd = wrapCommand(cmd, effectiveReadPrefs);
 
         Iterator<DBObject> i =
-                getCollection("$cmd").__find(cmd, new BasicDBObject(), 0, -1, 0, options, readPrefs ,
+                getCollection("$cmd").__find(cmd, new BasicDBObject(), 0, -1, 0, options, effectiveReadPrefs ,
                         DefaultDBDecoder.FACTORY.create(), encoder);
         if ( i == null || ! i.hasNext() )
             return null;
