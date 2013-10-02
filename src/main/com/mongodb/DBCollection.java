@@ -1329,7 +1329,7 @@ public abstract class DBCollection {
 
         DBObject command = prepareCommand(pipeline, options);
 
-        CommandResult res = _db.command(command, getOptions(), readPreference);
+        CommandResult res = _db.command(command, getOptions(), _db.getCommandReadPreference(command, readPreference));
         
         return new AggregationOutput(command, res);
     }
@@ -1367,7 +1367,8 @@ public abstract class DBCollection {
         String outCollection = (String) last.get("$out");
         if (outCollection != null) {
             DBCollection collection = _db.getCollection(outCollection);
-            return new DBCursorAdapter(new DBCursor(collection, new BasicDBObject(), null, readPreference));
+            return new DBCursorAdapter(new DBCursor(collection, new BasicDBObject(), null,
+                    _db.getCommandReadPreference(command, readPreference)));
         } else {
             return new ResultsCursor(res, this, options.getBatchSize());
         }

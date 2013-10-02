@@ -1,5 +1,6 @@
 package com.mongodb;
 
+import com.mongodb.AggregationOptions.OutputMode;
 import com.mongodb.util.TestCase;
 import org.testng.Assert;
 import org.testng.SkipException;
@@ -28,20 +29,20 @@ public class AggregationTest extends TestCase {
         database = cleanupMongo.getDB(cleanupDB);
         collection = database.getCollection(getClass().getSimpleName() + System.nanoTime());
     }
-    
+
     @BeforeMethod
     public void checkServerVersion() {
-        if(!serverIsAtLeastVersion(2.5)) {
+        if (!serverIsAtLeastVersion(2.5)) {
             throw new SkipException("Server is too old for this test.");
         }
         collection.drop();
     }
-    
+
     @AfterTest
     public void cleanup() {
         database.dropDatabase();
     }
-    
+
     @Test
     public void testAggregation() {
         final DBObject foo = new BasicDBObject("name", "foo").append("count", 5);
@@ -125,15 +126,15 @@ public class AggregationTest extends TestCase {
         database.getCollection(aggCollection)
                 .drop();
         Assert.assertEquals(database.getCollection(aggCollection)
-                                    .count(), 0);
+                .count(), 0);
 
         final List<DBObject> pipeline = new ArrayList<DBObject>(prepareData());
         pipeline.add(new BasicDBObject("$out", aggCollection));
         verify(pipeline, AggregationOptions.builder()
-                                           .outputMode(AggregationOptions.OutputMode.CURSOR)
-                                           .build());
+                .outputMode(AggregationOptions.OutputMode.CURSOR)
+                .build());
         assertEquals(2, database.getCollection(aggCollection)
-                                .count());
+                .count());
     }
 
     @Test
@@ -148,9 +149,10 @@ public class AggregationTest extends TestCase {
 
         final List<DBObject> pipeline = new ArrayList<DBObject>(prepareData());
         pipeline.add(new BasicDBObject("$out", aggCollection.getName()));
-        verify(pipeline, AggregationOptions.builder()
-                                           .outputMode(AggregationOptions.OutputMode.CURSOR)
-                                           .build(), ReadPreference.secondary(), aggCollection);
+        AggregationOptions options = AggregationOptions.builder()
+                .outputMode(OutputMode.CURSOR)
+                .build();
+        verify(pipeline, options, ReadPreference.secondary());
         assertEquals(2, aggCollection.count());
     }
 
@@ -174,12 +176,8 @@ public class AggregationTest extends TestCase {
         verify(pipeline, options, ReadPreference.primary());
     }
 
-    private void verify(final List<DBObject> pipeline, final AggregationOptions options, final ReadPreference readPreference) {
-        verify(pipeline, options, readPreference, collection);
-    }
-
-    private void verify(final List<DBObject> pipeline, final AggregationOptions options, final ReadPreference readPreference,
-                        final DBCollection collection) {
+    private void verify(final List<DBObject> pipeline, final AggregationOptions options,
+                        final ReadPreference readPreference) {
         final MongoCursor out = collection.aggregate(pipeline, options, readPreference);
 
         final Map<String, DBObject> results = new HashMap<String, DBObject>();

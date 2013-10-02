@@ -96,9 +96,12 @@ public abstract class DB {
             if (out instanceof BSONObject ){
                 BSONObject outMap = (BSONObject) out;
                 primaryRequired = outMap.get("inline") == null;
-            }
-            else
+            } else {
                 primaryRequired = true;
+            }
+        } else if(comString.equals("aggregate")) {
+            List<DBObject> pipeline = (List<DBObject>) command.get("pipeline");
+            primaryRequired = pipeline.get(pipeline.size()-1).get("$out") == null;
         } else {
            primaryRequired =  !_obedientCommands.contains(comString.toLowerCase());
         }
