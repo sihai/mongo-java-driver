@@ -1362,6 +1362,7 @@ public abstract class DBCollection {
         DBObject command = prepareCommand(pipeline, options);
         
         final CommandResult res = _db.command(command, getOptions(), readPreference);
+        res.throwOnError();
 
         String outCollection = (String) last.get("$out");
         if (outCollection != null) {

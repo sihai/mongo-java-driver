@@ -8,11 +8,14 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import static java.util.Arrays.asList;
 
 public class AggregationTest extends TestCase {
 
@@ -21,7 +24,8 @@ public class AggregationTest extends TestCase {
 
     @BeforeTest
     public void collection() {
-        database = cleanupMongo.getDB("DriverTest-" + System.nanoTime());
+        cleanupDB = "com_mongodb_AggregationTest";
+        database = cleanupMongo.getDB(cleanupDB);
         collection = database.getCollection(getClass().getSimpleName() + System.nanoTime());
     }
     
@@ -121,15 +125,33 @@ public class AggregationTest extends TestCase {
         database.getCollection(aggCollection)
                 .drop();
         Assert.assertEquals(database.getCollection(aggCollection)
-                .count(), 0);
+                                    .count(), 0);
 
         final List<DBObject> pipeline = new ArrayList<DBObject>(prepareData());
         pipeline.add(new BasicDBObject("$out", aggCollection));
         verify(pipeline, AggregationOptions.builder()
-                .outputMode(AggregationOptions.OutputMode.CURSOR)
-                .build());
+                                           .outputMode(AggregationOptions.OutputMode.CURSOR)
+                                           .build());
         assertEquals(2, database.getCollection(aggCollection)
-                .count());
+                                .count());
+    }
+
+    @Test
+    public void dollarOutOnSecondary() throws UnknownHostException {
+        if (isStandalone(cleanupMongo)) {
+            return;
+        }
+        MongoClient rsClient = new MongoClient(asList(new ServerAddress("localhost"), new ServerAddress("localhost", 27018)));
+        DB rsDatabase = rsClient.getDB(database.getName());
+        DBCollection aggCollection = rsDatabase.getCollection("aggCollection");
+        aggCollection.drop();
+
+        final List<DBObject> pipeline = new ArrayList<DBObject>(prepareData());
+        pipeline.add(new BasicDBObject("$out", aggCollection.getName()));
+        verify(pipeline, AggregationOptions.builder()
+                                           .outputMode(AggregationOptions.OutputMode.CURSOR)
+                                           .build(), ReadPreference.secondary(), aggCollection);
+        assertEquals(2, aggCollection.count());
     }
 
     public List<DBObject> prepareData() {
@@ -149,7 +171,16 @@ public class AggregationTest extends TestCase {
     }
 
     private void verify(final List<DBObject> pipeline, final AggregationOptions options) {
-        final MongoCursor out = collection.aggregate(pipeline, options, ReadPreference.primary());
+        verify(pipeline, options, ReadPreference.primary());
+    }
+
+    private void verify(final List<DBObject> pipeline, final AggregationOptions options, final ReadPreference readPreference) {
+        verify(pipeline, options, readPreference, collection);
+    }
+
+    private void verify(final List<DBObject> pipeline, final AggregationOptions options, final ReadPreference readPreference,
+                        final DBCollection collection) {
+        final MongoCursor out = collection.aggregate(pipeline, options, readPreference);
 
         final Map<String, DBObject> results = new HashMap<String, DBObject>();
         while (out.hasNext()) {
