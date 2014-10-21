@@ -3,6 +3,7 @@ commit-*
 *~
 *.class*
 .project
+.settings
 .#*
 .git
 *#

@@ -16,30 +16,6 @@
 
 package org.bson;
 
-import com.mongodb.DBRefBase;
-import org.bson.io.BasicOutputBuffer;
-import org.bson.io.OutputBuffer;
-import org.bson.types.BSONTimestamp;
-import org.bson.types.Binary;
-import org.bson.types.Code;
-import org.bson.types.CodeWScope;
-import org.bson.types.MaxKey;
-import org.bson.types.MinKey;
-import org.bson.types.ObjectId;
-import org.bson.types.Symbol;
-
-import java.lang.reflect.Array;
-import java.nio.Buffer;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.regex.Pattern;
-
 import static org.bson.BSON.ARRAY;
 import static org.bson.BSON.BINARY;
 import static org.bson.BSON.BOOLEAN;
@@ -64,6 +40,31 @@ import static org.bson.BSON.SYMBOL;
 import static org.bson.BSON.TIMESTAMP;
 import static org.bson.BSON.UNDEFINED;
 import static org.bson.BSON.regexFlags;
+
+import java.lang.reflect.Array;
+import java.nio.Buffer;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.regex.Pattern;
+
+import org.bson.io.BasicOutputBuffer;
+import org.bson.io.OutputBuffer;
+import org.bson.types.BSONTimestamp;
+import org.bson.types.Binary;
+import org.bson.types.Code;
+import org.bson.types.CodeWScope;
+import org.bson.types.MaxKey;
+import org.bson.types.MinKey;
+import org.bson.types.ObjectId;
+import org.bson.types.Symbol;
+
+import com.mongodb.DBRefBase;
 
 /**
  * This is meant to be pooled or cached. There is some per instance memory for string conversion, etc...
@@ -294,6 +295,8 @@ public class BasicBSONEncoder implements BSONEncoder {
             putMaxKey( name );
         else if ( putSpecial( name , val ) ){
             // no-op
+        } else if (val instanceof Enum) {
+        	putString(name, ((Enum)val).name() );
         }
         else {
             throw new IllegalArgumentException( "can't serialize " + val.getClass() );
